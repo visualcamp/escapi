@@ -5,7 +5,7 @@ struct SimpleCapParams
 	/* Target buffer. 
 	 * Must be at least mWidth * mHeight * sizeof(int) of size! 
 	 */
-	int * mTargetBuf;
+	unsigned char *mTargetBuf;
 	/* Buffer width */
 	int mWidth;
 	/* Buffer height */

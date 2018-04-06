@@ -83,6 +83,8 @@ STDMETHODIMP CaptureClass::OnReadSample(
 	IMFSample *aSample
 	)
 {
+	SYSTEMTIME st;
+
 	HRESULT hr = S_OK;
 	IMFMediaBuffer *mediabuffer = NULL;
 
@@ -129,17 +131,35 @@ STDMETHODIMP CaptureClass::OnReadSample(
 					BYTE *scanline0 = NULL;
 					LONG stride = 0;
 					hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
+					GetSystemTime(&st);
 
 					DO_OR_DIE_CRITSECTION;
 
-					mConvertFn(
-						(BYTE *)mCaptureBuffer,
-						mCaptureBufferWidth * 4,
-						scanline0,
-						stride,
-						mCaptureBufferWidth,
-						mCaptureBufferHeight
-						);
+					BYTE *dst = (BYTE*)gParams[mWhoAmI].mTargetBuf;
+					BYTE *src = (BYTE*)scanline0;
+
+					int src_step = stride / mCaptureBufferWidth;
+
+					int i, j;
+					if (mCaptureBufferHeight == gParams[mWhoAmI].mHeight && mCaptureBufferWidth == gParams[mWhoAmI].mWidth) {
+						for (i = 0; i < gParams[mWhoAmI].mHeight; i++) {
+							for (j = 0; j < gParams[mWhoAmI].mWidth; j++) {
+								*dst++ = *src;
+								src += src_step;
+							}
+						}
+					}
+
+					//mConvertFn(
+					//	(BYTE *)mCaptureBuffer,
+					//	mCaptureBufferWidth * 4,
+					//	scanline0,
+					//	stride,
+					//	mCaptureBufferWidth,
+					//	mCaptureBufferHeight
+					//	);
+					//GetSystemTime(&st);
+					//printf("After Convert : %d\n", st.wSecond * 1000 + st.wMilliseconds);
 				}
 				else
 				{
@@ -161,19 +181,32 @@ STDMETHODIMP CaptureClass::OnReadSample(
 						CopyMemory(mCaptureBuffer, scanline0, bytes);
 					}
 				}
-
-				int i, j;
+			/*	int i, j;
 				int *dst = (int*)gParams[mWhoAmI].mTargetBuf;
 				int *src = (int*)mCaptureBuffer;
-				for (i = 0; i < gParams[mWhoAmI].mHeight; i++)
-				{
-					for (j = 0; j < gParams[mWhoAmI].mWidth; j++, dst++)
-					{
-						*dst = src[
-							(i * mCaptureBufferHeight / gParams[mWhoAmI].mHeight) * mCaptureBufferWidth +
-								(j * mCaptureBufferWidth / gParams[mWhoAmI].mWidth)];
+				GetSystemTime(&st);
+				printf("Before Convert : %d\n", st.wSecond * 1000 + st.wMilliseconds);
+
+				if (mCaptureBufferHeight == gParams[mWhoAmI].mHeight && mCaptureBufferWidth == gParams[mWhoAmI].mWidth) {
+					printf("Same Case!\n");
+					for (i = 0; i < gParams[mWhoAmI].mHeight; i++) {
+						for (j = 0; j < gParams[mWhoAmI].mWidth; j++) {
+							*dst++ = *src++;
+						}
 					}
 				}
+				else {
+					printf("Difference Case!\n");
+					for (i = 0; i < gParams[mWhoAmI].mHeight; i++)
+					{
+						for (j = 0; j < gParams[mWhoAmI].mWidth; j++, dst++)
+						{
+							*dst = src[
+								(i * mCaptureBufferHeight / gParams[mWhoAmI].mHeight) * mCaptureBufferWidth +
+									(j * mCaptureBufferWidth / gParams[mWhoAmI].mWidth)];
+						}
+					}
+				}*/
 				gDoCapture[mWhoAmI] = 1;
 			}
 		}

@@ -1,6 +1,8 @@
 /* "simplest", example of simply enumerating the available devices with ESCAPI */
 #include <stdio.h>
 #include "escapi.h"
+#include <iostream>
+#include <Windows.h>
 
 void main()
 {
@@ -23,9 +25,9 @@ void main()
    */
 
 	struct SimpleCapParams capture;
-	capture.mWidth = 24;
-	capture.mHeight = 18;
-	capture.mTargetBuf = new int[24 * 18];
+	capture.mWidth = 640;
+	capture.mHeight = 480;
+	capture.mTargetBuf = new BYTE[640 * 480];
 	
 	/* Initialize capture - only one capture may be active per device,
 	 * but several devices may be captured at the same time. 
@@ -33,7 +35,7 @@ void main()
 	 * 0 is the first device.
 	 */
 	
-	if (initCapture(0, &capture) == 0)
+	if (initCapture(1, &capture) == 0)
 	{
 		printf("Capture failed - device may already be in use.\n");
 		return;
@@ -43,18 +45,31 @@ void main()
 	 * had time to adjust to the lighting conditions and
 	 * should give us a sane image..	 
 	 */
-	for (i = 0; i < 10; i++)
+	SYSTEMTIME st;
+	GetSystemTime(&st);
+	int frame = 0;
+	long startTime = st.wSecond * 1000 + st.wMilliseconds;
+	printf("Before Captrue : %d\n", startTime);
+	for (i = 0; i < 300; i++)
 	{
 		/* request a capture */			
-		doCapture(0);
+		doCapture(1);
 		
-		while (isCaptureDone(0) == 0)
+		while (isCaptureDone(1) == 0)
 		{
 			/* Wait until capture is done.
 			 * Warning: if capture init failed, or if the capture
 			 * simply fails (i.e, user unplugs the web camera), this
 			 * will be an infinite loop.
 			 */		   
+		}
+		frame++;
+		GetSystemTime(&st);
+		long curTime = st.wSecond * 1000 + st.wMilliseconds;
+		if (curTime - startTime >= 1000) {
+			printf("FPS : %3.1f\n", (float)frame / (curTime - startTime) * 1000);
+			startTime = curTime;
+			frame = 0;
 		}
 	}
 	
@@ -66,10 +81,12 @@ void main()
 	{
 		for (j = 0; j < 24; j++)
 		{
-			printf("%c", light[(capture.mTargetBuf[i*24+j] >> 13) & 7]);
+			printf("[%d], ", capture.mTargetBuf[i * 24 + j]);
 		}
 		printf("\n");
 	}
 	
 	deinitCapture(0);	
+	int a;
+	std::cin >> a;
 }
