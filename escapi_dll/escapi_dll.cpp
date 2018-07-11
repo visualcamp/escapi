@@ -10,6 +10,7 @@ extern int gDoCapture[];
 extern int gOptions[];
 
 extern HRESULT InitDevice(int device);
+extern void StartStream(int device, CaptureCallback callback);
 extern void CleanupDevice(int device);
 extern int CountCaptureDevices();
 extern void GetCaptureDeviceName(int deviceno, char * namebuffer, int bufferlength);
@@ -69,6 +70,15 @@ extern "C" int __declspec(dllexport) initCapture(unsigned int deviceno, struct S
 	gOptions[deviceno] = 0;
 	if (FAILED(InitDevice(deviceno))) return 0;
 	return 1;
+}
+
+extern "C" bool __declspec(dllexport) startStream(unsigned int deviceno, CaptureCallback callback)
+{
+	if (deviceno > MAXDEVICES || gDoCapture[deviceno] != 0)
+		return false;
+	StartStream(deviceno, callback);
+	gDoCapture[deviceno] = -1;
+	return true;
 }
 
 extern "C" void __declspec(dllexport) deinitCapture(unsigned int deviceno)

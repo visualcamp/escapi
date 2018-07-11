@@ -3,6 +3,7 @@
 
 countCaptureDevicesProc countCaptureDevices;
 initCaptureProc initCapture;
+startStreamProc startStream;
 deinitCaptureProc deinitCapture;
 doCaptureProc doCapture;
 isCaptureDoneProc isCaptureDone;
@@ -30,6 +31,7 @@ int setupESCAPI()
   /* Fetch function entry points */
   countCaptureDevices = (countCaptureDevicesProc)GetProcAddress(capdll, "countCaptureDevices");
   initCapture = (initCaptureProc)GetProcAddress(capdll, "initCapture");
+	startStream = (startStreamProc)GetProcAddress(capdll, "startStream");
   deinitCapture = (deinitCaptureProc)GetProcAddress(capdll, "deinitCapture");
   doCapture = (doCaptureProc)GetProcAddress(capdll, "doCapture");
   isCaptureDone = (isCaptureDoneProc)GetProcAddress(capdll, "isCaptureDone");
@@ -50,6 +52,7 @@ int setupESCAPI()
       getCaptureDeviceName == NULL ||
       countCaptureDevices == NULL ||
       initCapture == NULL ||
+			startStream == NULL ||
       deinitCapture == NULL ||
       doCapture == NULL ||
       isCaptureDone == NULL ||

@@ -1,4 +1,7 @@
 /* Extremely Simple Capture API */
+#include <functional>
+
+typedef std::function<void()> CaptureCallback;
 
 struct SimpleCapParams
 {
@@ -49,6 +52,12 @@ typedef int (*countCaptureDevicesProc)();
  *       Do *not* free the target buffer, or change its pointer!
  */
 typedef int (*initCaptureProc)(unsigned int deviceno, struct SimpleCapParams *aParams);
+
+
+/* Start stream to callback function
+ * 
+ */
+typedef bool(*startStreamProc)(unsigned int deviceno, CaptureCallback callback);
 
 /* deinitCapture closes the video capture device. */
 typedef void (*deinitCaptureProc)(unsigned int deviceno);
@@ -106,6 +115,7 @@ typedef int (*initCaptureWithOptionsProc)(unsigned int deviceno, struct SimpleCa
 #ifndef ESCAPI_DEFINITIONS_ONLY
 extern countCaptureDevicesProc countCaptureDevices;
 extern initCaptureProc initCapture;
+extern startStreamProc startStream;
 extern deinitCaptureProc deinitCapture;
 extern doCaptureProc doCapture;
 extern isCaptureDoneProc isCaptureDone;

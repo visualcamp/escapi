@@ -7,10 +7,11 @@ ConversionFunction gFormatConversions[] =
 	{ MFVideoFormat_RGB32, TransformImage_RGB32 },
 	{ MFVideoFormat_RGB24, TransformImage_RGB24 },
 	{ MFVideoFormat_YUY2, TransformImage_YUY2 },
-	{ MFVideoFormat_NV12, TransformImage_NV12 }
+	{ MFVideoFormat_NV12, TransformImage_NV12 },
+	{ MFVideoFormat_UYVY,  TransformImage_NV12 }
 };
 
-const DWORD gConversionFormats = 4;
+const DWORD gConversionFormats = 5;
 
 
 

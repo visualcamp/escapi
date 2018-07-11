@@ -4,6 +4,12 @@
 #include <iostream>
 #include <Windows.h>
 
+struct SimpleCapParams capture;
+
+void cb() {
+	printf("Streaming!!\n");
+}
+
 void main()
 {
 	int i, j;
@@ -17,6 +23,15 @@ void main()
 		printf("ESCAPI initialization failure or no devices found.\n");
 		return;
 	}
+	char name[50];
+	for (unsigned int i = 0; i < devices; i++) {
+		getCaptureDeviceName(i, name, 50);
+		printf("%d. camera name is = %s\n", i, name);
+		if (strcmp(name, "aGlass DK II (R)") == 0) {
+			printf("USB Camera Detected:%d\n", i);
+			break;
+		}
+	}
 
   /* Set up capture parameters.
    * ESCAPI will scale the data received from the camera 
@@ -24,10 +39,10 @@ void main()
    * Typically the native resolution is 320*240.
    */
 
-	struct SimpleCapParams capture;
+	
 	capture.mWidth = 640;
 	capture.mHeight = 480;
-	capture.mTargetBuf = new BYTE[640 * 480];
+	capture.mTargetBuf = new BYTE[640 * 480 * 2];
 	
 	/* Initialize capture - only one capture may be active per device,
 	 * but several devices may be captured at the same time. 
@@ -40,6 +55,10 @@ void main()
 		printf("Capture failed - device may already be in use.\n");
 		return;
 	}
+	else {
+		startStream(1, std::bind(cb));
+	}
+
 	
 	/* Go through 10 capture loops so that the camera has
 	 * had time to adjust to the lighting conditions and
@@ -50,11 +69,9 @@ void main()
 	int frame = 0;
 	long startTime = st.wSecond * 1000 + st.wMilliseconds;
 	printf("Before Captrue : %d\n", startTime);
-	for (i = 0; i < 300; i++)
+	for (i = 0; i < 500; i++)
 	{
-		/* request a capture */			
-		doCapture(1);
-		
+			
 		while (isCaptureDone(1) == 0)
 		{
 			/* Wait until capture is done.
@@ -63,6 +80,7 @@ void main()
 			 * will be an infinite loop.
 			 */		   
 		}
+		printf("Capture Done!\n");
 		frame++;
 		GetSystemTime(&st);
 		long curTime = st.wSecond * 1000 + st.wMilliseconds;
@@ -86,7 +104,7 @@ void main()
 		printf("\n");
 	}
 	
-	deinitCapture(0);	
+	deinitCapture(1);	
 	int a;
 	std::cin >> a;
 }

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <functional>
 
 class CaptureClass : public IMFSourceReaderCallback
 {
 public:
+	typedef std::function<void()> CaptureCallback;
 
 	CaptureClass();
 	~CaptureClass();
@@ -29,8 +31,10 @@ public:
 	int isMediaOk(IMFMediaType *aType, int aIndex);
 	int scanMediaTypes(unsigned int aWidth, unsigned int aHeight);
 	HRESULT initCapture(int aDevice);
+	void startStream(CaptureCallback callback);
 	void deinitCapture();
 
+	CaptureCallback callback;
 	long                    mRefCount;        // Reference count.
 	CRITICAL_SECTION        mCritsec;
 
@@ -50,4 +54,5 @@ public:
 	unsigned int			mMaxBadIndices;
 	unsigned int			mUsedIndex;
 	int						mRedoFromStart;
+
 };

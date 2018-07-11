@@ -43,6 +43,14 @@ HRESULT InitDevice(int aDevice)
 	return hr;
 }
 
+void StartStream(int aDevice, CaptureCallback callback)
+{
+	if (gDevice[aDevice])
+	{
+		gDevice[aDevice]->startStream(callback);
+	}
+}
+
 
 
 int CountCaptureDevices()

@@ -39,10 +39,12 @@ CaptureClass::CaptureClass()
 	mMaxBadIndices = 16;
 	mBadIndex = new unsigned int[mMaxBadIndices];
 	mRedoFromStart = 0;
+	callback = nullptr;
 }
 
 CaptureClass::~CaptureClass()
 {
+	callback = nullptr;
 	DeleteCriticalSection(&mCritsec);
 	delete[] mBadIndex;
 }
@@ -124,89 +126,28 @@ STDMETHODIMP CaptureClass::OnReadSample(
 
 				// Draw the frame.
 
-				if (mConvertFn)
-				{
-					VideoBufferLock buffer(mediabuffer);    // Helper object to lock the video buffer.
+				VideoBufferLock buffer(mediabuffer);    // Helper object to lock the video buffer.
 
-					BYTE *scanline0 = NULL;
-					LONG stride = 0;
-					hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
-					GetSystemTime(&st);
-
-					DO_OR_DIE_CRITSECTION;
-
-					BYTE *dst = (BYTE*)gParams[mWhoAmI].mTargetBuf;
-					BYTE *src = (BYTE*)scanline0;
-
-					int src_step = stride / mCaptureBufferWidth;
-
-					int i, j;
-					if (mCaptureBufferHeight == gParams[mWhoAmI].mHeight && mCaptureBufferWidth == gParams[mWhoAmI].mWidth) {
-						for (i = 0; i < gParams[mWhoAmI].mHeight; i++) {
-							for (j = 0; j < gParams[mWhoAmI].mWidth; j++) {
-								*dst++ = *src;
-								src += src_step;
-							}
-						}
-					}
-
-					//mConvertFn(
-					//	(BYTE *)mCaptureBuffer,
-					//	mCaptureBufferWidth * 4,
-					//	scanline0,
-					//	stride,
-					//	mCaptureBufferWidth,
-					//	mCaptureBufferHeight
-					//	);
-					//GetSystemTime(&st);
-					//printf("After Convert : %d\n", st.wSecond * 1000 + st.wMilliseconds);
-				}
-				else
-				{
-					// No convert function?
-					if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)
-					{
-						// Ah ok, raw data was requested, so let's copy it then.
-
-						VideoBufferLock buffer(mediabuffer);    // Helper object to lock the video buffer.
-						BYTE *scanline0 = NULL;
-						LONG stride = 0;
-						hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
-						if (stride < 0)
-						{
-							scanline0 += stride * mCaptureBufferHeight;
-							stride = -stride;
-						}
-						LONG bytes = stride * mCaptureBufferHeight;
-						CopyMemory(mCaptureBuffer, scanline0, bytes);
-					}
-				}
-			/*	int i, j;
-				int *dst = (int*)gParams[mWhoAmI].mTargetBuf;
-				int *src = (int*)mCaptureBuffer;
+				BYTE *scanline0 = NULL;
+				LONG stride = 0;
+				hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
 				GetSystemTime(&st);
-				printf("Before Convert : %d\n", st.wSecond * 1000 + st.wMilliseconds);
 
-				if (mCaptureBufferHeight == gParams[mWhoAmI].mHeight && mCaptureBufferWidth == gParams[mWhoAmI].mWidth) {
-					printf("Same Case!\n");
-					for (i = 0; i < gParams[mWhoAmI].mHeight; i++) {
-						for (j = 0; j < gParams[mWhoAmI].mWidth; j++) {
-							*dst++ = *src++;
-						}
-					}
-				}
-				else {
-					printf("Difference Case!\n");
-					for (i = 0; i < gParams[mWhoAmI].mHeight; i++)
-					{
-						for (j = 0; j < gParams[mWhoAmI].mWidth; j++, dst++)
-						{
-							*dst = src[
-								(i * mCaptureBufferHeight / gParams[mWhoAmI].mHeight) * mCaptureBufferWidth +
-									(j * mCaptureBufferWidth / gParams[mWhoAmI].mWidth)];
-						}
-					}
-				}*/
+				DO_OR_DIE_CRITSECTION;
+
+				BYTE *dst = (BYTE*)gParams[mWhoAmI].mTargetBuf;
+				BYTE *src = (BYTE*)scanline0;
+
+				int src_step = stride / mCaptureBufferWidth;
+				memcpy(dst, src, stride * mCaptureBufferHeight);
+				//int i, j;
+				//if (mCaptureBufferHeight == gParams[mWhoAmI].mHeight && mCaptureBufferWidth == gParams[mWhoAmI].mWidth) {
+				//	for (i = 0; i < gParams[mWhoAmI].mHeight; i++) {
+				//		for (j = 0; j < stride; j++) {
+				//			*dst++ = *src++;
+				//		}
+				//	}
+				//}
 				gDoCapture[mWhoAmI] = 1;
 			}
 		}
@@ -224,6 +165,10 @@ STDMETHODIMP CaptureClass::OnReadSample(
 
 	DO_OR_DIE_CRITSECTION;
 
+	if (callback != nullptr && gDoCapture[mWhoAmI] == 1) {
+		callback();
+		gDoCapture[mWhoAmI] = -1;
+	}
 	LeaveCriticalSection(&mCritsec);
 
 	return hr;
@@ -601,11 +546,11 @@ int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
 				besterror = error;
 				bestfit = count;
 			}
-			/*
+			
 			char temp[1024];
 			sprintf(temp, "%d x %d, %x:%x:%x:%x %d %d\n", width, height, nativeGuid.Data1, nativeGuid.Data2, nativeGuid.Data3, nativeGuid.Data4, bestfit == count, besterror);
 			OutputDebugStringA(temp);
-			*/
+			
 		}
 
 		count++;
@@ -736,6 +681,10 @@ HRESULT CaptureClass::initCapture(int aDevice)
 	*/
 
 	return 0;
+}
+
+void CaptureClass::startStream(CaptureCallback callback) {
+	this->callback = callback;
 }
 
 void CaptureClass::deinitCapture()
